@@ -9,10 +9,20 @@ from textblob import TextBlob as tb
 fw_file = "fw_10000.txt"
 stop_words = pd.read_csv(fw_file)
 stop_tags = ["MD","VBP","NN$","CD","POS","RB"]
-
-test_file = "reviews.csv"
-df = pd.read_csv(test_file)
+'''
+test_file = "TORONTO.csv"
+df = pd.read_csv(test_file,encoding='utf-8')
 cmts = df['comments']
+'''
+season_file = "toronto_by_season.csv"
+season = pd.read_csv(season_file,encoding='utf-8')
+spring = season['Spring']
+summer = season['Summer']
+fall = season['Fall']
+winter = season['Winter']
+year_file = "toronto_by_year.csv"
+year = pd.read_csv(year_file,encoding='utf-8')
+
 
 
 # take samples from comments by random index number
@@ -176,26 +186,62 @@ def ng_get_avg(doclist,n):
             print("\tWord:{}, TF-IDF: {}".format(word,round(score, 5)))'''
     return sorted_words
 
-# get samples by the number defined     
-sam_cmts = sample_cmts(cmts,500)
+def single_run(n_sample,filename):
+    # get samples by the number defined     
+    sam_cmts = sample_cmts(cmts,n_sample)
+    test = []
+    # filter the NaN, delete space and transform to lower case
+    for i in range(0,len(sam_cmts)):
+        if type(sam_cmts[i]) == float and math.isnan(sam_cmts[i]):
+            continue
+        test.append( sam_cmts[i].strip().lower() )
+    # stem the comments
+    test = stem(test)
+    # define the gram number of test set
+    result = ng_get_avg(test,2)
+    # write to file and filter single words
+    f = open(filename+'.txt','w')
+    for k,v in result:
+        if len(k.split(" ")) > 1 and  v > 0:
+            f.write('{}: {}\n'.format(k,v))
 
-test = []
-# filter the NaN, delete space and transform to lower case
-for i in range(0,len(sam_cmts)):
-    if type(sam_cmts[i]) == float and math.isnan(sam_cmts[i]):
-        continue
-    test.append( sam_cmts[i].strip().lower() )
-# stem the comments
-test = stem(test)
+    f.close()
 
-# define the gram number of test set
-result = ng_get_avg(test,5)
-
-# write to file and filter single words
-f = open('sorted_word','w')
-for k,v in result:
-    if len(k.split(' ')) > 1:
-        f.write('{}: {}\n'.format(k.encode('utf-8','replace'),v))
+def sy_run(n_sample,filename,sy_list):
+    sam_cmts = sample_cmts(sy_list,n_sample)
+    test = []
+    # filter the NaN, delete space and transform to lower case
+    for i in range(0,len(sam_cmts)):
+        if type(sam_cmts[i]) == float and math.isnan(sam_cmts[i]):
+            continue
+        test.append( sam_cmts[i].strip().lower() )
+    # stem the comments
+    test = stem(test)
+    # define the gram number of test set
+    result = ng_get_avg(test,2)
+    # write to file and filter single words
     
-f.close()
+    key = []
+    value = []
+    for k,v in result:
+        if len(key) < 30 and len(k.split(" ")) > 1 and  v > 0:
+            key.append(k)
+            value.append(v)
+    d = {"word":pd.Series(key),"score":pd.Series(value)}
+    df_d = pd.DataFrame(d)
+    df_d.to_csv(filename+'.csv',index=False)
+
+def test_run():
+    for i in range(2012,2018):
+        cur_ylist = year[str(i)]
+        if len(cur_ylist) != 0:
+            sy_run(5000,"toronto"+str(i),cur_ylist)
+
+    sy_run(5000,"toronto_spring",spring)
+    sy_run(5000,"toronto_summer",summer)
+    sy_run(5000,"toronto_fall",fall)
+    sy_run(5000,"toronto_winter",winter)
+
+test_run()
+
 

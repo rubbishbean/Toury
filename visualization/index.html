@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>World Map</title>
+
+<script src="./js/d3.min.js"></script>
+<script src="./js/topojson.min.js"></script>
+<script src="./js/datamaps.world.hires.min.js"></script>
+<style type="text/css">
+	.select{
+		position:absolute;
+		right:50px;
+		top:60px;
+	}
+
+</style>
+<div id="container" class='container' style="position: relative; width: 800px; height: 600px;"></div>
+<script>
+var indicators = ['education','food','transportation','crime','environment'];
+var color = {'Rank 1':'#9ACD32', 'Rank 2':'#E0E68C', 'Rank 3':'#E5CDB0', 'Rank 4':'#B22222'};
+var file = "./data/indicator_data/edu_c2.csv";
+
+var getfile = function(indicator){
+  
+  if (indicator == 'education'){
+  	return './data/indicator_data/edu_c2.csv';
+  }else if(indicator == 'food'){
+  	return './data/indicator_data/food_c2.csv';
+  }else if(indicator == 'transportation'){
+  	return './data/indicator_data/transport_c2.csv';
+  }else if(indicator == 'crime'){
+  	return './data/indicator_data/crime_c2.csv'
+  }else if(indicator == 'environment'){
+  	return './data/indicator_data/env_c2.csv'
+  }
+
+};
+
+var basic_choropleth = new Datamap({
+  element: document.getElementById("container"),
+  projection: 'mercator',
+  fills: {
+    defaultFill: "#D3D3D3",
+    'Rank 1': "#9ACD32",
+    'Rank 2': "#E0E68C",
+    'Rank 3': "#E5CDB0",
+    'Rank 4': "#B22222"
+  },
+  dataType: 'csv',
+  dataUrl: file,
+  data: {},
+});
+basic_choropleth.legend(); 
+
+/**
+var update = function(f_name){
+	d3.csv(f_name,function(data){
+		data = data.reduce(function(map,obj){
+			map[obj.id] = obj.fillKey;
+			return map;
+		},{});
+		console.log(data);
+		basic_choropleth.updateChoropleth(data);
+	})
+}
+**/
+
+var update = function(f_name){
+	d3.csv(f_name,function(data){
+		hash = {}
+		data.forEach(function(d){
+			hash[d.id] = color[d.fillKey] 
+			
+		})
+		basic_choropleth.updateChoropleth(hash,{reset: true});
+	})
+}
+
+var select = d3.select('.container')
+				.append('select')
+				.attr('class','select')
+				.on('change',onchange);
+
+
+var options = select
+				.selectAll('option')
+				.data(indicators).enter()
+				.append('option')
+				.text(function(d){
+					return d;
+				});
+function onchange(){
+	selectValue = d3.select('select').property('value');
+	update(getfile(selectValue));
+	
+};
+</script>
+</html>
